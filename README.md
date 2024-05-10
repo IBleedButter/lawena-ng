@@ -6,7 +6,8 @@ Easy to install and use. Does not interfere with your regular configs, HUD or la
 
 ## Features
 
-. . .
+- Working settings manager, compatible with old Lawena's setting file
+	- it reads from and saves to `lawena.lwf` in executable's current directory by default, but this can be overwritten by passing runtime argument (e.g. `./lawena-ng /path/to/my/lawena.lwf`)
 
 ## Installing
 
@@ -88,6 +89,7 @@ Port Java codebase to C++. Use [Qt6](https://www.qt.io/product/qt6) as cross-pla
 
 - Original project created by Montz
 - Original developer: [Quantic](steamcommunity.com/profiles/76561198012092861/) since June 2013 to December 2018
+- Current developer: [IBleedButter](https://steamcommunity.com/profiles/76561198130814770) since May 2024
 - Graphic .cfg files based on [mastercoms'](https://docs.comfig.app/latest/support_me/) ultra preset
 - Built-in Killnotices only and Medic HUD made by [mih](https://github.com/parinpu/recordinghuds)
 - Skyboxes included made by [komaokc](gamebanana.com/members/submissions/textures/289553) from GameBanana
