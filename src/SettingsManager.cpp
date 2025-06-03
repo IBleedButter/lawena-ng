@@ -1,169 +1,131 @@
 #include "SettingsManager.hpp"
+#include <fstream>
+#include <iostream>
+#include <string>
 
-SettingsManager::SettingsManager(const std::string &settingsFile)
+SettingsManager::SettingsManager(const std::string &settingsFile) : m_settingsFile(settingsFile)
 {
-    filename = settingsFile;
-
-    // Load default settings from memory
     loadDefaults();
-
-    // Load settings from file
-    if (loadFromFile() != EXIT_SUCCESS)
-    {
-        // Failed to load file, but that's fine: we already loaded defaults
-        std::cerr << "[WARNING] Failed to load settings from file '" << settingsFile << "': falling back to defaults" << std::endl;
-    }
-    else
-    {
-        std::cout << "[INFO] Loaded settings from file '" << settingsFile << "'" << std::endl;
-    }
+    loadFromFile();
+    printAll();
 }
 
 void SettingsManager::loadDefaults(void)
 {
-    for (int i = 0; i < DEFAULTS_SIZE; i++)
-    {
-        properties[defaults[i][0]] = defaults[i][1];
-    }
+    m_steamDir = "";
+    m_tfDir = "";
+    m_movieDir = "";
+    m_height = 1920;
+    m_width = 1080;
+    m_launchMode = "tf2";
+    m_launchOptions = "-novid -console";
 }
 
-int SettingsManager::loadFromFile(void)
+void SettingsManager::loadFromFile(void)
 {
-    // Open file handle
-    std::ifstream fp;
+    /* Open file */
+    std::ifstream settingsFile(m_settingsFile, std::ios::in);
 
-    fp.open(filename);
-
-    if (!fp.is_open())
+    if (!settingsFile)
     {
-        return EXIT_FAILURE;
+        // TODO: replace with Qt6 MessageBox
+
+        std::cerr << "Failed to read settings from file '" << m_settingsFile << "'!" << std::endl;
     }
 
-    // Iterate through file
+    /* Read from file */
     std::string buffer;
 
-    while (std::getline(fp, buffer))
+    while (std::getline(settingsFile, buffer))
     {
-        // Skip comments
-        if (buffer[0] == '#') { continue; }
-
-        // Only add valid options
-        for (int i = 0; i < DEFAULTS_SIZE; i++)
+        /* Ignore comments */
+        if (buffer[0] == '#' || buffer[0] == ';')
         {
-            if (buffer.compare(defaults[i][0]) == 0)
-            {
-                // Split string at '='
-                size_t pos = buffer.find('=');
-                if (pos == std::string::npos) { continue; }
-                std::string key = buffer.substr(0, pos);
-                std::string value = buffer.substr(pos + 1);
-                properties[key] = value;
-            }
+            continue;
+        }
+
+        /* Don't care about sections */
+
+        /* Ignore non-key-value pairs */
+        std::size_t pos = buffer.find('=');
+
+        if (pos == std::string::npos)
+        {
+            continue;
+        }
+
+        /* Extract the key */
+        std::string key = buffer.substr(0, pos);
+        key.erase(key.find_last_not_of(" \n\r\t") + 1);
+
+        /* Extract the value */
+        std::string value = buffer.substr(pos + 1);
+        value.erase(0, value.find_first_not_of(" \n\r\t"));
+
+        /* We only care about certain keys */
+        if (key == "SteamDir")
+        {
+            setSteamDir(value);
+        } else if (key == "TfDir")
+        {
+            setTfDir(value);
+        } else if (key == "MovieDir")
+        {
+            setMovieDir(value);
+        } else if (key == "Width")
+        {
+            setHeight(std::stoi(value));
+        } else if (key == "Height")
+        {
+            setWidth(std::stoi(value));
+
+        } else if (key == "LaunchMode")
+        {
+            setLaunchMode(value);
+        } else if (key == "LaunchOptions")
+        {
+            setLaunchOptions(value);
         }
     }
 
-    // Close file handle
-    fp.close();
-
-    return EXIT_SUCCESS;
+    /* Close file */
+    settingsFile.close();
 }
 
-int SettingsManager::saveToFile(void)
+void SettingsManager::saveToFile(void)
 {
-    // Open file handle
-    std::ofstream fp;
+    /* Open file */
+    std::ofstream settingsFile(m_settingsFile, std::ios::out);
 
-    fp.open(filename);
-
-    if (!fp.is_open())
+    if (!settingsFile)
     {
-        return EXIT_FAILURE;
+        std::cerr << "SettingsManager::saveToFile(): failed to open file '" << m_settingsFile << "'!";
+        return;
     }
 
-    // Iterate through properties and write to file
-    for (const auto &[key, value] : properties)
-    {
-        fp << key << "=" << value << std::endl;
-    }
+    /* Write to file */
+    settingsFile << "SteamDir = " << m_steamDir << '\n';
+    settingsFile << "TfDir = " << m_tfDir << '\n';
+    settingsFile << "MovieDir = " << m_movieDir << '\n';
+    settingsFile << "Width = " << m_width << '\n';
+    settingsFile << "Height = " << m_height << '\n';
+    settingsFile << "LaunchMode = " << m_launchMode << '\n';
+    settingsFile << "LaunchOptions = " << m_launchOptions << '\n';
 
-    // Close file handle
-    fp.close();
-
-    return EXIT_SUCCESS;
+    /* Close file */
+    settingsFile.flush();
+    settingsFile.close();
 }
 
-int SettingsManager::saveToCfg(void)
+void SettingsManager::printAll(void)
 {
-    // Open file handle
-    std::ofstream fp;
+    std::cout << "SteamDir = " << m_steamDir << '\n';
+    std::cout << "TfDir = " << m_tfDir << '\n';
+    std::cout << "MovieDir = " << m_movieDir << '\n';
+    std::cout << "Width = " << m_width << '\n';
+    std::cout << "Height = " << m_height << '\n';
+    std::cout << "LaunchMode = " << m_launchMode << '\n';
+    std::cout << "LaunchOptions = " << m_launchOptions << '\n';
 
-    fp.open("settings.cfg");
-
-    if (!fp.is_open())
-    {
-        return EXIT_FAILURE;
-    }
-
-    std::vector<std::string> lines;
-    lines.push_back("alias recframerate host_framerate " + properties["Framerate"]);
-    lines.push_back("alias currentfpsup 240fps");
-    lines.push_back("alias currentfpsdn 60fps");
-    lines.push_back("mat_picmip -10");
-    lines.push_back("cl_autorezoom 0");
-    lines.push_back("cl_autoreload 0");
-    lines.push_back("hud_saytext_time 0");
-    lines.push_back("net_graph 0");
-    lines.push_back("alias voice_menu_1 \"\"");
-    lines.push_back("alias voice_menu_2 \"\"");
-    lines.push_back("alias voice_menu_3 \"\"");
-    lines.push_back("alias +taunt \"\"");
-    lines.push_back("alias +context_action \"\"");
-    lines.push_back("cl_showfps 0");
-    lines.push_back("volume 1");
-    lines.push_back("hud_fastswitch 1");
-    lines.push_back("cl_hud_playerclass_playermodel_showed_confirm_dialog 1");
-    lines.push_back("engine_no_focus_sleep 0");
-    lines.push_back("cl_spec_carrieditems 0");
-    lines.push_back("tf_hud_target_id_disable_floating_health 1");
-    lines.push_back("cl_crosshair_red 255");
-    lines.push_back("cl_crosshair_green 255");
-    lines.push_back("cl_crosshair_blue 255");
-    lines.push_back("alias net_graph \"\"");
-    lines.push_back("alias cl_showfps \"\"");
-    lines.push_back("alias voice_enable \"\"");
-    lines.push_back("cl_jiggle_bone_framerate_cutoff 0");
-    lines.push_back("alias cl_jiggle_bone_framerate_cutoff \"\"");
-    lines.push_back("violence_agibs 1");
-    lines.push_back("violence_hgibs 1");
-    lines.push_back("violence_ablood 1");
-    lines.push_back("violence_hblood 1");
-    lines.push_back("alias violence_agibs \"\"");
-    lines.push_back("alias violence_hgibs \"\"");
-    lines.push_back("alias violence_ablood \"\"");
-    lines.push_back("alias violence_hblood \"\"");
-    lines.push_back("r_portalsopenall 1");
-    lines.push_back("alias r_portalsopenall \"\"");
-    lines.push_back("hud_saytext_time 0");
-    lines.push_back("alias hud_saytext_time \"\"");
-    lines.push_back("tf_use_min_viewmodels 0");
-    lines.push_back("alias tf_use_min_viewmodels \"\"");
-    lines.push_back("gameui_preventescapetoshow");
-
-    for (const auto& line : lines)
-    {
-        fp << line << std::endl;
-    }
-
-    // Close file handle
-    fp.close();
-
-    return EXIT_SUCCESS;
-}
-
-void SettingsManager::printProperties(void)
-{
-    for (const auto& [key, value] : properties)
-    {
-        std::cout << key << "=" << value << std::endl;
-    }
+    std::cout.flush();
 }
