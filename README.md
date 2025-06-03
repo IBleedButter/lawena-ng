@@ -106,13 +106,19 @@ CompileFlags:
 
 ^ replace `/usr/include/qt6` with whatever directory has the Qt6 headers
 
-### 4.2. Coding style
+### 4.2. Static analysis
+
+```Shell
+analyze-build --cdb compile_commands.json --analyze-headers --maxloop 8
+```
+
+### 4.3. Coding style
 
 Slightly modified version of [LLVM's coding standard](https://llvm.org/docs/CodingStandards.html) as defined in `.clang-format`
 
 You don't have to learn this, just make sure your IDE supports [ClangFormat](https://clang.llvm.org/docs/ClangFormat.html). CLion does this out-of-the-box, but for Visual Studio Code you have to install the [clangd](https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd) extension
 
-### 4.3. Before opening a pull request
+### 4.4. Before opening a pull request
 
 Please properly test your code before opening a pull request!
 
