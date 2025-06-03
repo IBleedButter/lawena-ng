@@ -1,0 +1,14 @@
+[Desktop Entry]
+Comment=
+Exec=/usr/local/bin/lawena-ng
+GenericName=TF2 recording tool
+Icon=/usr/local/share/icons/hicolor/256x256/apps/lawena-ng.ico
+Name=lawena-ng
+NoDisplay=false
+Path=
+StartupNotify=true
+Terminal=false
+TerminalOptions=
+Type=Application
+X-KDE-SubstituteUID=false
+X-KDE-Username=
