@@ -1,97 +1,150 @@
 # lawena-ng
 
+> [!IMPORTANT]  
+> This is still early in development, don't use it outside of testing yet, and make sure you backup your `tf/` folder!
+
 lawena-ng is a C++ port of Java [Lawena](https://github.com/quanticc/lawena-recording-tool). It greatly enhances your TF2 and other Source games image quality for recording purposes, with little performance loss compared to other alternatives. Records using in-game Source Recorder, with key bindings to ease the process.
 
 Easy to install and use. Does not interfere with your regular configs, HUD or launch options.
 
-## Features
+## 1. Installing
 
-- Working settings manager, compatible with old Lawena's setting file
-	- it reads from and saves to `lawena.lwf` in current directory by default, but this can be overwritten by passing a runtime argument (e.g. `./lawena-ng /path/to/my/lawena.lwf`)
+Not available until I set up GitHub Actions or whatever, so you'll have to build it yourself
 
-## Installing
+## 2. Building
 
-. . .
+### CMake options
 
-## Building
+> [!NOTE]  
+> You can ignore this section if you're not a developer or a power user
 
-### Windows
+- `-G Ninja` - Use a custom generator, e.g. Ninja
 
-*Required Visual Studio workloads*:
-- Desktop development with C++
+- `-DCMAKE_CXX_COMPILER=clang++` - Use a custom C++ compiler, e.g. Clang
 
-Visual Studio -> Clone a repository -> URL: `https://github.com/ibleedbutter/lawena-ng.git`
+- `-DWITH_LTO=ON` - Enables Link-Time Optimization
+    - *Only makes sense with `-DCMAKE_BUILD_TYPE=Release`*
 
-Build -> Build all (or `Ctrl+Shift+B`)
+- `-DWITH_UPX=ON` - Packs the executable after compilation to reduce disk space
+    - *Only makes sense with `-DCMAKE_BUILD_TYPE=Release`*
 
-### Linux
+- `-DWITH_ASAN=ON` - Enables [AddressSanitizer](https://clang.llvm.org/docs/AddressSanitizer.html)
+    - *Only makes sense with `-DCMAKE_BUILD_TYPE=Debug`*
+    - NOTE: ASan's memory leak detector gives false positives? Valgrind reported nothing, so could run with `ASAN_OPTIONS=detect_leaks=0`
 
-*Required dependencies*:
+- `-DWITH_UBSAN=ON` - Enables [UndefinedBehaviorSanitizer](https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html)
+    - *Only makes sense with `-DCMAKE_BUILD_TYPE=Debug`*
+
+
+### 2.1. Windows
+
+...
+
+### 2.2. Linux
+
+Required dependencies:
+
 - `git`
 - `cmake`
-- `make`
+- `make` or `ninja`
 - `g++` or `clang++`
+- `qt6` development headers and libraries
 
-```Bash
-git clone https://github.com/ibleedbutter/lawena-ng.git
-cd lawena-ng
-mkdir build && cd build
-cmake ..
-make
+On Ubuntu you can install this with:
+
+```Shell
+sudo apt update
+
+sudo apt install git cmake make g++ qt6-base-dev
 ```
 
-## Contributing
+Then:
+
+```Shell
+git clone https://github.com/IBleedButter/lawena-ng.git
+
+cd lawena-ng
+
+mkdir build ; cd build
+
+cmake -DCMAKE_BUILD_TYPE=Release -DWITH_LTO=ON ..
+
+cmake --build .
+
+sudo cmake --install .
+```
+
+## 3. Contributing
 
 You can help out even if you're not a developer. Issues with old Lawena or ideas for lawena-ng would be much appreciated!
 
 - Open a [GitHub issue](https://github.com/IBleedButter/lawena-ng/issues/new)
 - Reply in the [TFTV thread](https://www.teamfortress.tv/64527/lawena-2-0)
-- Send me an email: `119887590+IBleedButter@users.noreply.github.com`
 - Send me a Discord message: `ibleedbutter`
 
-## TO-DO
+## 4. Developing
 
-Port Java codebase to C++. Use [Qt6](https://www.qt.io/product/qt6) as cross-platform GUI framework. 
+### 4.1. clangd
 
-- Add 64-bit TF2 support and enable it by default
-- Add CastingEssentials by default
+For clangd to be able to do its job you might need to generate `compile_commands.json`:
+
+```Shell
+mkdir build ; cd build
+
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=clang++ -DWITH_ASAN=ON -DWITH_UBSAN=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
+
+cp -v compile_commands.json ..
+```
+
+If you run into include errors in your IDE you might also have to create the `.clangd` file with:
+
+```Text
+CompileFlags:
+  Add:
+    - "-I/usr/include/qt6"
+```
+
+^ replace `/usr/include/qt6` with whatever directory has the Qt6 headers
+
+### 4.2. Coding style
+
+Slightly modified version of [LLVM's coding standard](https://llvm.org/docs/CodingStandards.html) as defined in `.clang-format`
+
+You don't have to learn this, just make sure your IDE supports [ClangFormat](https://clang.llvm.org/docs/ClangFormat.html). CLion does this out-of-the-box, but for Visual Studio Code you have to install the [clangd](https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd) extension
+
+### 4.3. Before opening a pull request
+
+Please properly test your code before opening a pull request!
+
+This means building and running it with both ASan and UBsan, using a static analyzer, and writing unit tests
+
+## 5. TO-DO
+
+List of changes / improvements from old Lawena I'll eventually implement:
+
+- Add [CastingEssentialsNext](https://github.com/drunderscore/CastingEssentialsNext)
 - Add support for generating VDM files based off of an _events.txt file (*thanks [blakeplusplus](https://www.teamfortress.tv/user/blakeplusplus)*)
+- Add a previewer for skyboxes (*see [vtf2png](https://github.com/eXeC64/vtf2png)*)
 - Add a previewer for custom particle effects
-- Add an in-line renderer to remove dependencies on external tools like VirtualDub, AviRecorder or FFmpeg
-- Add SourceRes for rendering beyond your native resolution (*thanks [maraudeR](https://www.teamfortress.tv/user/maraudeR)*)
-- Fix the skybox previewer (*only seems to be dysfunctional on Linux?*)
-- Fix 'kill notices only' and 'medic' HUDs not working (*only seems to be dysfunctional when using CE?*)
-- Fix 'medic' HUD: include HP (*thanks [Blu2th1000](https://www.teamfortress.tv/user/Blu2th1000)*)
+- Add an in-line renderer to remove dependencies on external tools like VirtualDub, AviRecorder or FFmpeg (*see [libav*](https://trac.ffmpeg.org/wiki/Using%20libav*)*)
+- Add [SourceRes](https://github.com/MattMcNam/source-res) for rendering beyond your native resolution (*thanks [maraudeR](https://www.teamfortress.tv/user/maraudeR)*)
+    - This hasn't been updated since way before the 64-bit update, it probably doesn't work anymore...
+- Rewrite the custom HUDs
 - Fix medic speech bubbles appearing for the first few seconds when jumping ticks (*thanks [pajaro](https://www.teamfortress.tv/user/pajaro)*)
 - Fix `snd_soundmixer` changing when jumping ticks (*thanks [pajaro](https://www.teamfortress.tv/user/pajaro)*)
 - Look into using a [custom tf2 install](https://www.youtube.com/watch?v=lH4scK3uB_s) with gameinfo.txt (*thanks [Hold_on](https://www.teamfortress.tv/user/Hold_on)*)
-- Remove dependence on admin privs under Windows ([CLWindows.java:125](https://github.com/quanticc/lawena-recording-tool/blob/d3bf73e540d927be23e09516a4569162dcd3b700/src/main/java/lwrt/CLWindows.java#L125)?)
 - Better HUD checking: old Lawena thinks some custom assets like CE are HUDs
-- Output recordings outside the `tf` folder: TF2 doesn't let you do this, but an easy workaround is to have Lawena move them around as they appear on disk
-- Better config:
-	- graphics: use mastercomfig ultra preset instead of Chris Max's maxquality cfgs (*they've been unmaintained since 2012*)
-	- `tf_use_min_viewmodels 0`
-	- `gameui_preventescapetoshow`
-	- `cl_jiggle_bone_framerate_cutoff 0`: fixes botkiller shaking (*thanks phnx8*)
-	- `r_portalsopenall 1`: fixes doorway flash glitch (*thanks phnx8*)
-	- `violence_*gibs` & `violence_*blood`: enables gibs in case someone disables them in their class cfg (*thanks phnx8*)
-	- `hud_saytext_time 0`: keeps chat disabled (*thanks phnx8*)
-- Better default settings
-	- Change resolution from 1280x720 to 1920x1080
-	- Change viewmodelf FOV from 70 to 90
-	- Disable motion blur
-	- Enable default crosshair
-	- Enable combat text (dmg numbers)
-	- Enable hitsounds
-	- Add `-insecure` launch option
+    - This can be done by checking `resource/ui/*`
+- Output recordings outside the `tf` folder
+    - TF2 doesn't let you do this for security reasons, but an easy workaround is to have Lawena move them around as they appear on disk
+- Replace Chris Max's maxquality cfgs with mastercomfig ultra preset
 
-## Credits
+## 6. Credits
 
 - Original project created by Montz
-- Original developer: [Quantic](steamcommunity.com/profiles/76561198012092861/) since June 2013 to December 2018
+- Original developer: [Quantic](https://steamcommunity.com/profiles/76561198012092861) since June 2013 to December 2018
 - Current developer: [IBleedButter](https://steamcommunity.com/profiles/76561198130814770) since May 2024
-- Graphic .cfg files based on [mastercoms'](https://docs.comfig.app/latest/support_me/) ultra preset
+- Graphic configs based on [mastercoms](https://docs.comfig.app/latest/support_me/)' ultra preset
 - Built-in Killnotices only and Medic HUD made by [mih](https://github.com/parinpu/recordinghuds)
-- Skyboxes included made by [komaokc](gamebanana.com/members/submissions/textures/289553) from GameBanana
-- Includes some content used in PLDX recording tool
+- Skyboxes included made by [komaokc](https://gamebanana.com/members/289553) from GameBanana
 - Valve - Source engine, Team Fortress and the Team Fortress logo
