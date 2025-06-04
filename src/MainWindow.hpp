@@ -14,6 +14,7 @@
 #include <QPushButton>
 #include <QStringList>
 #include <QSysInfo>
+#include <QTextEdit>
 #include <QWidget>
 
 #define WINDOW_WIDTH 800
@@ -28,6 +29,9 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
 
 private slots:
+    /* Logging */
+    void updateLogDisplay(const QString &message);
+
     /* Menu bar*/
     void changeSteamFolder(void);
     void changeTF2Folder(void);
@@ -48,7 +52,7 @@ private:
     void createMenus(void);
     void printMessage(QMessageBox::Icon icon, const QString &title, const QString &text);
 
-    Logger logger;
+    Logger *logger;
     SettingsManager settings;
 
     /* "Invisible" */
@@ -84,6 +88,8 @@ private:
     QStringList resolutionBoxItems{"1920x1080", "1280x720"};
 
     QPushButton *startTF2Button{nullptr};
+
+    QTextEdit *logBuffer{nullptr};
 
     QMessageBox *messageBox{nullptr};
 };

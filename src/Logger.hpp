@@ -2,7 +2,9 @@
 #ifndef LOGGER_HPP
 #define LOGGER_HPP
 
-#include <fstream>
+#include <QObject>
+#include <QSharedPointer>
+#include <QString>
 #include <string>
 
 enum LogLevel
@@ -14,14 +16,22 @@ enum LogLevel
     CRITICAL,
 };
 
-class Logger
+class Logger : public QObject
 {
+    Q_OBJECT
+
 public:
-    Logger(const std::string &logFile);
-    ~Logger();
+    Logger(QObject *parent = nullptr) : QObject(parent), m_logMessages(new QString()) {}
+
+    void log(LogLevel level, const std::string &message);
+
+    QSharedPointer<QString> getLogMessages(void) const { return m_logMessages; }
+
+signals:
+    void logUpdated(const QString &newLogString);
 
 private:
-    std::ofstream m_logFile;
+    QSharedPointer<QString> m_logMessages;
 
     std::string level2string(LogLevel level);
 };

@@ -1,22 +1,35 @@
 #include "Logger.hpp"
+
 #include <iostream>
 
-Logger::Logger(const std::string &logFile)
+void Logger::log(LogLevel level, const std::string &message)
 {
-
-    m_logFile.open(logFile, std::ios::app);
-
-    if (!m_logFile)
+    /* Get the current datetime */
+    time_t now = time(0);
+    tm *timeinfo = localtime(&now);
+    if (timeinfo == nullptr)
     {
-        std::cerr << "Logger::Logger(): failed to open file '" << logFile << "'!" << std::endl;
         return;
     }
-}
+    char timestamp[32];
+    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", timeinfo);
 
-Logger::~Logger()
-{
-    m_logFile.flush();
-    m_logFile.close();
+    /* Construct log message */
+    std::string logMessage;
+    logMessage += "[";
+    logMessage += timestamp;
+    logMessage += "] ";
+    logMessage += level2string(level);
+    logMessage += ": ";
+    logMessage += message;
+
+    /* Print it out to stdout */
+    std::cout << logMessage << std::endl;
+
+    /* Append it to the list as well */
+    m_logMessages->append(QString::fromStdString(logMessage) + '\n');
+
+    emit logUpdated(*m_logMessages);
 }
 
 std::string Logger::level2string(LogLevel level)

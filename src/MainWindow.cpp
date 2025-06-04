@@ -11,13 +11,15 @@
 #include <QSysInfo>
 #include <filesystem>
 
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), logger("lawena.log"), settings("lawena.ini")
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), logger(new Logger(this)), settings("lawena.ini")
 {
+    /* Set window properties */
     this->setWindowTitle("lawena-ng");
     this->setFixedSize(WINDOW_WIDTH, WINDOW_HEIGHT);
     // TODO: this obviously only works when running from build directory
     this->setWindowIcon(QIcon("../data/icons/icon.ico"));
 
+    /* Add menu bar and its functionality  */
     createActions();
     createMenus();
 
@@ -58,6 +60,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), logger("lawena.lo
     startTF2Button->move(tabWidget->width() - (startTF2Button->width() + WINDOW_MARGIN),
                          tabWidget->height() - (startTF2Button->height() + WINDOW_MARGIN) - 25);
     connect(startTF2Button, &QPushButton::clicked, this, &MainWindow::startTF2);
+
+    logBuffer = new QTextEdit(tabLog);
+    logBuffer->setFixedSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+    logBuffer->setReadOnly(true);
+    connect(logger, &Logger::logUpdated, this, &MainWindow::updateLogDisplay);
 }
 
 void MainWindow::createActions(void)
@@ -127,6 +134,12 @@ void MainWindow::printMessage(QMessageBox::Icon icon, const QString &title, cons
     messageBox->exec();
 }
 
+void MainWindow::updateLogDisplay(const QString &message)
+{
+    //
+    logBuffer->setText(message);
+}
+
 void MainWindow::changeSteamFolder(void)
 {
     const QString steamFolder = fileDialog->getExistingDirectory();
@@ -160,6 +173,7 @@ void MainWindow::openSteamFolder(void)
 
     if (steamDir.isEmpty())
     {
+        logger->log(LogLevel::WARNING, "MainWindow::openSteamFolder(): failed to open Steam folder!");
         printMessage(QMessageBox::Warning, "Warning", "Failed to open Steam folder:\nnot defined!");
         return;
     }
@@ -175,6 +189,7 @@ void MainWindow::openTF2Folder(void)
 
     if (tfDir.isEmpty())
     {
+        logger->log(LogLevel::WARNING, "MainWindow::openTF2Folder(): failed to open TF2 folder!");
         printMessage(QMessageBox::Warning, "Warning", "Failed to open TF2 folder:\nnot defined!");
         return;
     }
@@ -188,6 +203,7 @@ void MainWindow::openMovieFolder(void)
 
     if (movieDir.isEmpty())
     {
+        logger->log(LogLevel::WARNING, "MainWindow::openMovieFolder(): failed to open movie folder!");
         printMessage(QMessageBox::Warning, "Warning", "Failed to open movie folder:\nnot defined!");
         return;
     }
@@ -209,7 +225,7 @@ void MainWindow::saveSettings(void)
 
 void MainWindow::about()
 {
-    ;
+    logger->log(LogLevel::INFO, "MainWindow::about(): Version 0.0.1");
     printMessage(QMessageBox::Information, "About", "Version 0.0.1\nBlah blah blah...");
 }
 
@@ -236,6 +252,9 @@ void MainWindow::startTF2()
     const std::string steamDir = settings.getSteamDir();
     if (!std::filesystem::exists(steamDir) || !std::filesystem::is_directory(steamDir))
     {
+        logger->log(LogLevel::WARNING,
+                    "MainWindow::startTF2(): Steam directory is either not defined or doesn't exist!");
+
         printMessage(
             QMessageBox::Warning, "Refusing to launch TF2",
             "Steam directory isn't valid!\nIt's either not defined (check settings) or it doesn't exist on disk");
@@ -247,6 +266,8 @@ void MainWindow::startTF2()
 
     if (!std::filesystem::exists(tfDir) || !std::filesystem::is_directory(tfDir))
     {
+        logger->log(LogLevel::WARNING, "MainWindow::startTF2(): TF2 directory is either not defined or doesn't exist!");
+
         printMessage(
             QMessageBox::Warning, "Refusing to launch TF2",
             "TF2 directory isn't valid!\nIt's either not defined (check settings) or it doesn't exist on disk");
@@ -266,6 +287,8 @@ void MainWindow::startTF2()
         */
         program = "steam";
         arguments << "steam://rungameid/440" << "-novid" << "-console"; // launch options are borke
+        logger->log(LogLevel::WARNING, "MainWindow::startTF2(): (program, arguments): (" + program.toStdString() +
+                                           ", " + arguments.join("").toStdString() + ")");
     } else
     {
         printMessage(QMessageBox::Warning, "Windows not supported yet", "Windows is not supported yet");
